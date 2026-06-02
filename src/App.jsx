@@ -11,7 +11,7 @@ const DEFAULTS = {
   downPaymentPct: 25,
   interestRate: 5.25,
   propertyTaxAnnual: 12000,
-  homeInsuranceAnnual: 3000,
+  homeInsuranceAnnual: 1740,
   hoaMonthly: 573,
   pmiRate: 0,
   yearlyMaintenance: 0,
