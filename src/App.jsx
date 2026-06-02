@@ -7,23 +7,24 @@ import { runCalculation } from './calculate'
 
 // ─── defaults ────────────────────────────────────────────────────────────────
 const DEFAULTS = {
-  homePrice: 1500000,
-  downPaymentPct: 20,
-  interestRate: 7.0,
-  propertyTaxAnnual: 18000,
+  homePrice: 1485000,
+  downPaymentPct: 25,
+  interestRate: 5.25,
+  propertyTaxAnnual: 12000,
   homeInsuranceAnnual: 3000,
-  hoaMonthly: 1500,
+  hoaMonthly: 573,
   pmiRate: 0,
-  buyerClosingCostsPct: 5.5,
-  sellerClosingCostsPct: 9,
+  yearlyMaintenance: 0,
+  buyerClosingCostsPct: 3.4,
+  sellerClosingCostsPct: 8,
   federalRate: 35,
   nyStateRate: 10,
   filingStatusOwnership: 'single',
-  filingStatusSale: 'single',
-  invCapGainsRate: 15,
-  appreciationRate: 4,
-  investmentReturn: 7,
-  monthlyRent: 6500,
+  filingStatusSale: 'mfj',
+  invCapGainsRate: 34.3,
+  appreciationRate: 3,
+  investmentReturn: 8,
+  monthlyRent: 6000,
   housingInflation: 3,
 }
 
@@ -145,6 +146,7 @@ export default function App() {
             {numInput('Home Insurance', 'homeInsuranceAnnual', inputs, setInputs, { prefix: '$', suffix: '/yr', step: 250 })}
             {numInput('HOA', 'hoaMonthly', inputs, setInputs, { prefix: '$', suffix: '/mo', step: 100 })}
             {numInput('PMI Rate', 'pmiRate', inputs, setInputs, { suffix: '%/yr', step: 0.05, min: 0 })}
+            {numInput('Maintenance', 'yearlyMaintenance', inputs, setInputs, { prefix: '$', suffix: '/yr', step: 1000 })}
             {numInput('Buyer Closing Costs', 'buyerClosingCostsPct', inputs, setInputs, { suffix: '% of price', step: 0.25 })}
             {numInput('Seller Closing Costs', 'sellerClosingCostsPct', inputs, setInputs, { suffix: '% of sale', step: 0.25 })}
           </section>
@@ -305,6 +307,11 @@ export default function App() {
                         <td>PMI</td>
                         <td className="num">{fmt(bd.pmi)}</td>
                         <td>Avg monthly, yr 1–{selectedYear} (until LTV ≤ 80%)</td>
+                      </tr>
+                      <tr>
+                        <td>Maintenance (amortized)</td>
+                        <td className="num">{fmt(bd.maintenanceAmortized)}</td>
+                        <td>{fmt(inputs.yearlyMaintenance)}/yr ÷ 12 months</td>
                       </tr>
                       <tr className="deduction-row">
                         <td>Tax Savings</td>

@@ -52,6 +52,7 @@ function buildAmortization(inputs) {
     investmentReturn,
     monthlyRent,
     housingInflation,
+    yearlyMaintenance,
   } = inputs;
 
   const downPayment = homePrice * (downPaymentPct / 100);
@@ -187,11 +188,16 @@ function buildAmortization(inputs) {
     const B = (Math.pow(1 + r, N) - 1) / r;
     const q = 1 - invCGRate;
 
+    // Maintenance is a fixed annual cost (today's dollars): maint/month = yearlyMaintenance / 12
+    const maint = (yearlyMaintenance || 0) / 12;
+    const baseCostAdj = baseCost + maint * N; // total maintenance over holding period
+    const Aadj = A + maint * B;
+
     // Solve for R, assuming positive delta portfolio (buyer costs > R on average → renter invests extra)
-    let R = (baseCost + forgoneWealth + A * q) / (N + B * q);
+    let R = (baseCostAdj + forgoneWealth + Aadj * q) / (N + B * q);
     // Verify sign; if delta portfolio is actually negative, no tax benefit on losses
-    if (A - R * B < 0) {
-      R = (baseCost + forgoneWealth + A) / (N + B);
+    if (Aadj - R * B < 0) {
+      R = (baseCostAdj + forgoneWealth + Aadj) / (N + B);
     }
 
     const oppCostMonthly = forgoneWealth / N;
@@ -220,6 +226,7 @@ function buildAmortization(inputs) {
         insurance: cumInsurance / N,
         hoa: cumHOA / N,
         pmi: cumPMI / N,
+        maintenanceAmortized: (yearlyMaintenance || 0) / 12,
         taxSavings: cumAnnualTaxSavings / N, // avg monthly = cumulative annual / total months
         marketRent: cumMarketRent / N,
         oppCostMonthly,
