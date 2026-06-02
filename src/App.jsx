@@ -284,7 +284,7 @@ export default function App() {
                         <td>Fixed 30-yr payment</td>
                       </tr>
                       <tr>
-                        <td>Closing Costs (amortized)</td>
+                        <td>Buyer Closing Costs (amortized)</td>
                         <td className="num">{fmt(bd.closingCostAmortized)}</td>
                         <td>{fmt(results.buyerCC)} ÷ {selectedYear * 12} months</td>
                       </tr>
@@ -329,7 +329,7 @@ export default function App() {
                         <td>Forgone after-tax return on {fmt(results.initialOutlay)} over {selectedYear} yr</td>
                       </tr>
                       <tr className={selectedData.deltaPortAfterTax >= 0 ? 'opp-row' : 'deduction-row'}>
-                        <td>Opportunity Cost (Cash Flow Delta)</td>
+                        <td>Opportunity Cost (cash flow)</td>
                         <td className="num">
                           {selectedData.deltaPortAfterTax >= 0 ? '+' : '−'}{fmt(Math.abs(selectedData.deltaPortAfterTax / (selectedYear * 12)))}
                         </td>
