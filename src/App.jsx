@@ -18,7 +18,7 @@ const DEFAULTS = {
   buyerClosingCostsPct: 3.4,
   sellerClosingCostsPct: 8,
   federalRate: 35,
-  nyStateRate: 10,
+  nyStateRate: 10.73,
   filingStatusOwnership: 'single',
   filingStatusSale: 'mfj',
   invCapGainsRate: 34.3,
@@ -324,9 +324,18 @@ export default function App() {
                         <td>Net sale proceeds ÷ {selectedYear * 12} months owned</td>
                       </tr>
                       <tr className="opp-row">
-                        <td>Opportunity Cost</td>
+                        <td>Opportunity Cost (down payment)</td>
                         <td className="num">+{fmt(bd.oppCostMonthly)}</td>
-                        <td>Forgone return on {fmt(results.initialOutlay)} over {selectedYear} yr</td>
+                        <td>Forgone after-tax return on {fmt(results.initialOutlay)} over {selectedYear} yr</td>
+                      </tr>
+                      <tr className={selectedData.deltaPortAfterTax >= 0 ? 'opp-row' : 'deduction-row'}>
+                        <td>Opportunity Cost (Cash Flow Delta)</td>
+                        <td className="num">
+                          {selectedData.deltaPortAfterTax >= 0 ? '+' : '−'}{fmt(Math.abs(selectedData.deltaPortAfterTax / (selectedYear * 12)))}
+                        </td>
+                        <td>
+                          Estimated return on invested difference between market rent and monthly ownership costs
+                        </td>
                       </tr>
                       <tr className="total-row">
                         <td>Equivalent Net Rent</td>

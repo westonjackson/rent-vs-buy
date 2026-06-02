@@ -207,6 +207,7 @@ select {
 .deduction-row td.num { color: #15803d; }
 .opp-row td { background: #fffbeb; color: #92400e; }
 .opp-row td.num { color: #b45309; }
+.row-note { font-size: 0.72rem; font-weight: 400; opacity: 0.75; margin-top: 2px; }
 .total-row td {
   background: var(--blue-light);
   font-weight: 700;

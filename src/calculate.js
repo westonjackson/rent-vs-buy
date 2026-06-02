@@ -130,7 +130,7 @@ function buildAmortization(inputs) {
     }
   }
 
-  // ── Phase 2: year-by-year equivalent rent (closed-form) ────────────────
+  // ── Phase 2: year-by-year equivalent rent ────────────────────────────────
   const yearData = [];
   let cumBuyerCosts = 0;
   // Running totals for averaging breakdown items over the holding period
@@ -141,19 +141,36 @@ function buildAmortization(inputs) {
   let cumAnnualTaxSavings = 0;
   let cumMarketRent = 0;
 
+  const maint = (yearlyMaintenance || 0) / 12;
+
+  // Cash flow delta portfolio: each month the renter invests (buyer monthly cost − market rent).
+  // Buyer monthly cost = P&I + HOA + insurance + property tax + PMI + maintenance − tax savings.
+  // Market rent grows at housingInflation each year.
+  // Portfolio compounds at the investment return rate. At liquidation, cap gains tax applies to
+  // gains only (final value − net principal, where principal = Σ deposits − Σ withdrawals).
+  let deltaPV = 0;
+  let deltaNetPrincipal = 0;
+
   for (let y = 1; y <= 30; y++) {
     const N = y * 12; // total months in holding period
     const base = (y - 1) * 12;
     const yearMonths = months.slice(base, base + 12);
     const annualTaxSavings = yearlyTaxSavings[y - 1];
 
-    // Accumulate per-month values for this year (used for period averages below)
+    // Accumulate per-month values for this year (used for period averages and delta portfolio)
     for (const mo of yearMonths) {
       cumPropTax += mo.propTax;
       cumInsurance += mo.insurance;
       cumHOA += mo.hoa;
       cumPMI += mo.pmi;
       cumMarketRent += mo.marketRent;
+
+      // Grow delta portfolio at monthly investment return, then add this month's net flow.
+      // mo.netMonthlyCost = P&I + propTax + insurance + HOA + PMI − taxSavings (no maintenance).
+      deltaPV *= (1 + r);
+      const delta = mo.netMonthlyCost + maint - mo.marketRent;
+      deltaPV += delta;
+      deltaNetPrincipal += delta;
     }
     cumAnnualTaxSavings += annualTaxSavings;
 
@@ -172,33 +189,24 @@ function buildAmortization(inputs) {
     // baseCost = total cost of buying (net of tax savings) minus equity realized
     const totalCostOfBuying = initialOutlay + cumBuyerCosts;
     const baseCost = totalCostOfBuying - netEquity;
+    const baseCostAdj = baseCost + maint * N; // add maintenance paid over holding period
 
     // Opportunity cost of initial outlay: grow at investment return, after invCGRate on gains only
     const fvInitial = initialOutlay * Math.pow(1 + investmentReturn / 100, y);
     const forgoneWealth = (fvInitial - initialOutlay) * (1 - invCGRate);
 
-    // A = FV of all buyer net monthly costs over holding period
-    // B = annuity FV factor = ((1+r)^N - 1) / r
-    // Closed-form: R = (baseCost + forgoneWealth + A*q) / (N + B*q)
-    // where q = 1 - invCGRate (after-tax factor on cash-flow delta portfolio gains)
-    let A = 0;
-    for (let mi = 0; mi < N; mi++) {
-      A += months[mi].netMonthlyCost * Math.pow(1 + r, N - 1 - mi);
-    }
-    const B = (Math.pow(1 + r, N) - 1) / r;
-    const q = 1 - invCGRate;
+    // After-tax liquidation value of the cash flow delta portfolio at year N.
+    // Cap gains tax applies only to gains (portfolio value − net principal); no tax benefit on losses.
+    const deltaGains = Math.max(0, deltaPV - deltaNetPrincipal);
+    const deltaPortAfterTax = deltaPV - deltaGains * invCGRate;
 
-    // Maintenance is a fixed annual cost (today's dollars): maint/month = yearlyMaintenance / 12
-    const maint = (yearlyMaintenance || 0) / 12;
-    const baseCostAdj = baseCost + maint * N; // total maintenance over holding period
-    const Aadj = A + maint * B;
-
-    // Solve for R, assuming positive delta portfolio (buyer costs > R on average → renter invests extra)
-    let R = (baseCostAdj + forgoneWealth + Aadj * q) / (N + B * q);
-    // Verify sign; if delta portfolio is actually negative, no tax benefit on losses
-    if (Aadj - R * B < 0) {
-      R = (baseCostAdj + forgoneWealth + Aadj) / (N + B);
-    }
+    // Equivalent rent: constant monthly payment R such that the renter is equally wealthy as the buyer.
+    //   Buyer's net cost          = baseCostAdj + forgoneWealth
+    //   Renter's net cost at R/mo = R*N − forgoneWealth − deltaPortAfterTax
+    //   Setting equal → R = (baseCostAdj + forgoneWealth + deltaPortAfterTax) / N
+    // When deltaPortAfterTax > 0 (buyer paid more than rent → renter invested extra), R rises,
+    // making buying look more expensive. When negative (buyer paid less), R falls.
+    const R = (baseCostAdj + forgoneWealth + deltaPortAfterTax) / N;
 
     const oppCostMonthly = forgoneWealth / N;
     const equivalentNetRent = R;
@@ -217,6 +225,7 @@ function buildAmortization(inputs) {
       cumBuyerCosts,
       baseCost,
       oppCostMonthly,
+      deltaPortAfterTax,
       annualTaxSavings,
       avgMonthly: {
         pi: monthlyPayment,
@@ -226,7 +235,7 @@ function buildAmortization(inputs) {
         insurance: cumInsurance / N,
         hoa: cumHOA / N,
         pmi: cumPMI / N,
-        maintenanceAmortized: (yearlyMaintenance || 0) / 12,
+        maintenanceAmortized: maint,
         taxSavings: cumAnnualTaxSavings / N, // avg monthly = cumulative annual / total months
         marketRent: cumMarketRent / N,
         oppCostMonthly,
